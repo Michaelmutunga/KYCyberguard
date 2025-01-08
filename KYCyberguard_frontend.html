@@ -61,6 +61,17 @@
             border: 1px solid #d4ffd4;
             border-radius: 4px;
         }
+        .error {
+            color: red;
+            font-size: 0.9em;
+            margin-top: -10px;
+            margin-bottom: 10px;
+        }
+        .loading {
+            text-align: center;
+            margin-top: 20px;
+            display: none;
+        }
     </style>
 </head>
 <body>
@@ -69,7 +80,8 @@
         <form id="assessment-form">
             <div class="form-group">
                 <label for="company-name">Company Name</label>
-                <input type="text" id="company-name" name="company_name" required>
+                <input type="text" id="company-name" name="company_name" required aria-describedby="company-name-error">
+                <span id="company-name-error" class="error" style="display: none;">Company name is required.</span>
             </div>
             <div class="form-group">
                 <label><input type="checkbox" id="has-antivirus"> Has Antivirus</label>
@@ -88,6 +100,7 @@
             </div>
             <button type="submit">Submit Assessment</button>
         </form>
+        <div id="loading" class="loading">Submitting...</div>
         <div id="result" class="result" style="display: none;"></div>
     </div>
 
@@ -95,12 +108,21 @@
         document.getElementById('assessment-form').addEventListener('submit', async function(e) {
             e.preventDefault();
 
-            const companyName = document.getElementById('company-name').value;
+            const companyName = document.getElementById('company-name').value.trim();
             const hasAntivirus = document.getElementById('has-antivirus').checked;
             const hasFirewall = document.getElementById('has-firewall').checked;
             const hasIDS = document.getElementById('has-ids').checked;
             const employeeTraining = document.getElementById('employee-training').checked;
             const dataBackup = document.getElementById('data-backup').checked;
+
+            // Clear previous error messages
+            const errorElement = document.getElementById('company-name-error');
+            errorElement.style.display = 'none';
+
+            if (!companyName) {
+                errorElement.style.display = 'block';
+                return;
+            }
 
             const requestData = {
                 company_name: companyName,
@@ -110,6 +132,10 @@
                 employee_training: employeeTraining,
                 data_backup: dataBackup
             };
+
+            // Show loading state
+            const loadingElement = document.getElementById('loading');
+            loadingElement.style.display = 'block';
 
             try {
                 const response = await fetch('/api/assess', {
@@ -121,6 +147,8 @@
                 });
 
                 const resultData = await response.json();
+
+                loadingElement.style.display = 'none'; // Hide loading state
 
                 if (response.ok) {
                     document.getElementById('result').style.display = 'block';
@@ -137,6 +165,7 @@
                     alert(resultData.message || 'An error occurred');
                 }
             } catch (error) {
+                loadingElement.style.display = 'none'; // Hide loading state
                 alert('Failed to submit assessment. Please try again later.');
                 console.error('Error:', error);
             }
